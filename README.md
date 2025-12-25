@@ -8,7 +8,7 @@ from lexical analysis to runtime execution.
 Flux focuses on **clarity, inspectability, and learning**, making it ideal
 for students, beginners, and anyone curious about language design.
 
-![Flux Workflow](workflow.png)
+![Flux Workflow](images/workflow.png)
 
 ---
 
