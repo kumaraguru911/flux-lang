@@ -1,7 +1,6 @@
 package ast;
 
 import java.util.List;
-
 import lexer.Token;
 
 public abstract class Expr {
@@ -17,6 +16,36 @@ public abstract class Expr {
             this.right = right;
         }
     }
+    public static class Get extends Expr {
+    public final Expr object;
+    public final Token name;
+
+    public Get(Expr object, Token name) {
+        this.object = object;
+        this.name = name;
+    }
+}
+
+public static class Set extends Expr {
+    public final Expr object;
+    public final Token name;
+    public final Expr value;
+
+    public Set(Expr object, Token name, Expr value) {
+        this.object = object;
+        this.name = name;
+        this.value = value;
+    }
+}
+
+public static class This extends Expr {
+    public final Token keyword;
+
+    public This(Token keyword) {
+        this.keyword = keyword;
+    }
+}
+
 
     public static class Array extends Expr {
     public final List<Expr> elements;
@@ -36,6 +65,28 @@ public static class Index extends Expr {
     }
 }
 
+    public static class Lambda extends Expr {
+    public final List<Token> params;
+    public final List<Stmt> body;
+
+    public Lambda(List<Token> params, List<Stmt> body) {
+        this.params = params;
+        this.body = body;
+    }
+}
+
+    public static class Logical extends Expr {
+    public final Expr left;
+    public final Token operator;
+    public final Expr right;
+
+    public Logical(Expr left, Token operator, Expr right) {
+        this.left = left;
+        this.operator = operator;
+        this.right = right;
+    }
+}
+
     public static class Literal extends Expr {
         public final Object value;
 
@@ -51,4 +102,15 @@ public static class Index extends Expr {
             this.name = name;
         }
     }
+
+    public static class Call extends Expr {
+    public final Expr callee;
+    public final List<Expr> arguments;
+
+    public Call(Expr callee, List<Expr> arguments) {
+        this.callee = callee;
+        this.arguments = arguments;
+    }
+}
+
 }

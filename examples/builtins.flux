@@ -1,0 +1,5 @@
+print len([10, 20, 30])
+print type(10)
+print type("hello")
+print type([1,2])
+print range(1, 5)

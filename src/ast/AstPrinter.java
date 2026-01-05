@@ -21,6 +21,25 @@ public class AstPrinter {
     else if (stmt instanceof Stmt.Exit) {
         System.out.println(indent + "Exit");
     }
+    else if (stmt instanceof Stmt.Function) {
+    Stmt.Function fn = (Stmt.Function) stmt;
+
+    System.out.println(indent + "Function " + fn.name.lexeme);
+
+    if (!fn.params.isEmpty()) {
+        System.out.print(indent + "├─ Params: ");
+        for (int i = 0; i < fn.params.size(); i++) {
+            System.out.print(fn.params.get(i).lexeme);
+            if (i < fn.params.size() - 1) System.out.print(", ");
+        }
+        System.out.println();
+    }
+
+    System.out.println(indent + "└─ Body");
+    for (Stmt s : fn.body) {
+        printStmt(s, indent + "   ");
+    }
+}
     else if (stmt instanceof Stmt.Block) {
         System.out.println(indent + "Block");
         for (Stmt s : ((Stmt.Block) stmt).statements) {
@@ -32,6 +51,17 @@ public class AstPrinter {
         System.out.println(indent + "Assignment " + a.name.lexeme);
         printExpr(a.value, indent + "│  ");
     }
+    else if (stmt instanceof Stmt.Return) {
+    System.out.println(indent + "Return");
+    Stmt.Return r = (Stmt.Return) stmt;
+    if (r.value != null) {
+        printExpr(r.value, indent + "│  ");
+    }
+}
+    else if (stmt instanceof Stmt.Expression) {
+    System.out.println(indent + "Expression");
+    printExpr(((Stmt.Expression) stmt).expression, indent + "│  ");
+}
     else if (stmt instanceof Stmt.If) {
         Stmt.If i = (Stmt.If) stmt;
         System.out.println(indent + "If");
@@ -73,6 +103,26 @@ public class AstPrinter {
         System.out.println(indent + "Variable " +
             ((Expr.Variable) expr).name.lexeme);
     }
+    else if (expr instanceof Expr.Call) {
+    Expr.Call call = (Expr.Call) expr;
+    System.out.println(indent + "Call");
+
+    System.out.println(indent + "├─ Callee");
+    printExpr(call.callee, indent + "│  ");
+
+    if (!call.arguments.isEmpty()) {
+        System.out.println(indent + "└─ Arguments");
+        for (Expr arg : call.arguments) {
+            printExpr(arg, indent + "   ");
+        }
+    }
+}
+    else if (expr instanceof Expr.Get) {
+    Expr.Get get = (Expr.Get) expr;
+    System.out.println(indent + "Get");
+    printExpr(get.object, indent + "├─ ");
+    System.out.println(indent + "└─ " + get.name.lexeme);
+}
     else if (expr instanceof Expr.Binary) {
         Expr.Binary b = (Expr.Binary) expr;
         System.out.println(indent + "Binary " + b.operator.lexeme);

@@ -20,8 +20,14 @@ for students, beginners, and anyone curious about language design.
 - Variables and expressions
 - Arrays with indexed access
 - Conditional statements (`if / else`)
-- Loops (`while`, `for`)
+- Loops (`while`, `for`) with `break` and `continue`
+- Functions (named and anonymous/lambda)
+- Classes and object-oriented programming
+- Methods and `this` keyword
+- Logical operators (`and`, `or`, `not`)
+- Built-in functions (`len`, `type`, `range`)
 - Graceful program termination (`exit`)
+- Comments (`#`)
 - Beginner-friendly error messages
 
 ---
@@ -124,17 +130,36 @@ Flux provides several CLI commands:
 ## 🧪 Example Flux Program
 
 ```flux
-nums = [10, 20, 30]
-sum = 0
+class Counter {
+    fun init() {
+        this.value = 0
+    }
 
-for i = 0 to 2 {
-    sum = sum + nums[i]
+    fun inc() {
+        this.value = this.value + 1
+        return this
+    }
 }
 
-print "Sum =", sum
+fun add(a, b) {
+    return a + b
+}
 
-if sum > 50 {
-    print "Big number"
+c = Counter()
+c.inc().inc()
+print "Count:", c.value
+
+nums = range(1, 5)
+sum = 0
+
+for i = 0 to len(nums) - 1 {
+    sum = add(sum, nums[i])
+}
+
+print "Sum:", sum
+
+if sum > 10 and not (sum == 0) {
+    print "Big sum"
 }
 ```
 
@@ -163,19 +188,6 @@ Detailed documentation is available in the `docs/` folder:
 
 ---
 
-## ⚠️ Limitations
-
-Flux intentionally keeps its feature set minimal:
-
-- No user-defined functions
-- No classes or modules
-- No static typing
-- Single runtime environment
-
-These constraints keep Flux focused on core interpreter concepts.
-
----
-
 ## 🧠 Learning Outcomes
 
 Building Flux involved learning:
@@ -185,6 +197,7 @@ Building Flux involved learning:
 - AST construction and traversal
 - Interpreter design
 - Runtime environment management
+- Object-oriented features (classes, methods, inheritance-free)
 - CLI tooling and REPL design
 
 ---

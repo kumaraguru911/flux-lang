@@ -33,10 +33,11 @@ Each stage transforms data into a more structured representation.
 - Converts characters into meaningful tokens
 
 **Examples of tokens:**
-- Keywords (`if`, `while`, `for`, `print`, `exit`)
+- Keywords (`if`, `while`, `for`, `print`, `exit`, `fun`, `class`, `return`, `this`, `and`, `or`, `not`, `break`, `continue`)
 - Identifiers (`x`, `sum`, `nums`)
-- Literals (`10`, `"hello"`)
-- Operators (`+`, `-`, `>`, `==`)
+- Literals (`10`, `"hello"`, `true`, `false`)
+- Operators (`+`, `-`, `>`, `==`, `=`, `.`, `[`, `]`)
+- Symbols (`(`, `)`, `{`, `}`, `,`, `#`)
 
 **Why this matters:**
 Separating lexing from parsing simplifies syntax analysis and error handling.
@@ -50,9 +51,11 @@ Separating lexing from parsing simplifies syntax analysis and error handling.
 - Builds an Abstract Syntax Tree (AST)
 - Enforces language grammar rules
 
-**Key design choice:**
+**Key design choices:**
 - `for` loops are desugared internally into `while` loops
-- This keeps the interpreter simpler while supporting higher-level syntax
+- Functions and classes are parsed with proper scoping
+- Logical operators support short-circuit evaluation
+- Method calls are handled via dot notation
 
 ---
 
@@ -61,6 +64,10 @@ Separating lexing from parsing simplifies syntax analysis and error handling.
 **Responsibility:**
 - Represents the program structure as a tree
 - Decouples syntax from execution
+
+**Supported constructs:**
+- Statements: Print, Expression, Assignment, If/Else, While, For, Function, Class, Return, Break, Continue, Exit
+- Expressions: Binary, Unary, Literal, Variable, Call, Get, Set, Array, Index, Lambda, Logical
 
 **Why AST is important:**
 - Enables AST visualization (`flux ast`)
@@ -77,7 +84,12 @@ Separating lexing from parsing simplifies syntax analysis and error handling.
 - Evaluates expressions recursively
 
 **Key features:**
-- Clear separation of statements and expressions
+- Dynamic typing with runtime type checking
+- Function calls with parameter passing and return values
+- Class instantiation and method binding
+- Array operations and indexing
+- Logical operations with short-circuiting
+- Loop control with break/continue
 - Execution trace mode for educational insight
 - Graceful program termination via `exit`
 
@@ -88,11 +100,13 @@ Separating lexing from parsing simplifies syntax analysis and error handling.
 **Responsibility:**
 - Stores variable names and their values
 - Maintains program state during execution
+- Supports nested scopes for functions and blocks
 
 **Additional capabilities:**
 - Environment dump (`flux env`) for runtime inspection
-- Supports arrays and indexed access
+- Supports arrays, objects, and functions as first-class values
 - Handles undefined variable errors safely
+- Built-in functions (`len`, `type`, `range`)
 
 ---
 

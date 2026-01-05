@@ -14,13 +14,19 @@ public enum TokenType {
     LESS_EQUAL,
     GREATER_EQUAL,
     BANG_EQUAL,
+    FUN, RETURN,
 
 
     // Literals
     IDENTIFIER, NUMBER, STRING,
 
     // Keywords
-    IF, PRINT, ELSE, WHILE,FOR, TO,
+    IF, PRINT, ELSE, WHILE,
+    FOR, TO,AND,OR,NOT,
+    BREAK,CONTINUE,
+    CLASS,THIS,DOT,
+
+
 
 
     // Special

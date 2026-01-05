@@ -4,18 +4,28 @@ import ast.Expr;
 import ast.Stmt;
 import java.util.ArrayList;
 import java.util.List;
+import lexer.TokenType;
+import runtime.BuiltinFunction;
 import runtime.Environment;
 import runtime.ExitSignal;
+import runtime.FluxClass;
+import runtime.FluxFunction;
+import runtime.FluxInstance;
+import runtime.NativeFunction;
+import runtime.ReturnSignal;
 
 public class Interpreter {
 
-    private final Environment environment = new Environment();
+    private Environment environment = new Environment();
     private boolean trace = false;
 
-    public Interpreter() {}
+    public Interpreter() {
+        defineBuiltins();
+    }
 
     public Interpreter(boolean trace) {
         this.trace = trace;
+        defineBuiltins();
     }
 
     public void interpret(List<Stmt> statements) {
@@ -41,11 +51,55 @@ public class Interpreter {
             trace("Print " + result);
             System.out.println(result);
         }
+        
+        else if (stmt instanceof Stmt.Class) {
+    Stmt.Class cls = (Stmt.Class) stmt;
+    FluxClass klass = new FluxClass(
+        cls.name.lexeme,
+        cls.fields,
+        cls.methods
+    );
+    environment.define(cls.name.lexeme, klass);
+}
 
-        else if (stmt instanceof Stmt.Exit) {
+
+        else if (stmt instanceof Stmt.Function) {
+    Stmt.Function fn = (Stmt.Function) stmt;
+
+    FluxFunction function = new FluxFunction(
+        fn.name,
+        fn.params,
+        fn.body,
+        environment
+    );
+
+    environment.define(fn.name.lexeme, function);
+
+    trace("Define function " + fn.name.lexeme);
+}
+
+    else if (stmt instanceof Stmt.Expression) {
+    evaluate(((Stmt.Expression) stmt).expression);
+}
+    else if (stmt instanceof Stmt.Break) {
+    throw new runtime.BreakSignal();
+}
+
+else if (stmt instanceof Stmt.Continue) {
+    throw new runtime.ContinueSignal();
+}
+
+
+    else if (stmt instanceof Stmt.Exit) {
             trace("Exit program");
             throw new ExitSignal();
         }
+        else if (stmt instanceof Stmt.Return) {
+    Stmt.Return r = (Stmt.Return) stmt;
+    Object value = r.value == null ? null : evaluate(r.value);
+    throw new ReturnSignal(value);
+}
+
 
         else if (stmt instanceof Stmt.Block) {
             for (Stmt s : ((Stmt.Block) stmt).statements) {
@@ -54,18 +108,26 @@ public class Interpreter {
         }
 
         else if (stmt instanceof Stmt.While) {
-            Stmt.While whileStmt = (Stmt.While) stmt;
-            trace("Entering while loop");
+    Stmt.While whileStmt = (Stmt.While) stmt;
+    trace("Entering while loop");
 
-            while (isTruthy(evaluate(whileStmt.condition))) {
-                trace("While condition true");
-                for (Stmt bodyStmt : whileStmt.body) {
-                    execute(bodyStmt);
-                }
+    while (isTruthy(evaluate(whileStmt.condition))) {
+        try {
+            for (Stmt bodyStmt : whileStmt.body) {
+                execute(bodyStmt);
             }
-
-            trace("Exiting while loop");
         }
+        catch (runtime.ContinueSignal c) {
+            continue;
+        }
+        catch (runtime.BreakSignal b) {
+            break;
+        }
+    }
+
+    trace("Exiting while loop");
+}
+
 
         else if (stmt instanceof Stmt.Assignment) {
             Stmt.Assignment assign = (Stmt.Assignment) stmt;
@@ -112,6 +174,21 @@ public class Interpreter {
             }
             return values;
         }
+        if (expr instanceof Expr.Lambda) {
+    Expr.Lambda lambda = (Expr.Lambda) expr;
+
+    return new FluxFunction(
+        null,                // no name
+        lambda.params,
+        lambda.body,
+        environment          // closure captured here
+    );
+}
+        if (expr instanceof Expr.This) {
+    return environment.get("this");
+}
+
+
 
         if (expr instanceof Expr.Index) {
             Object arrayObj = evaluate(((Expr.Index) expr).array);
@@ -130,58 +207,261 @@ public class Interpreter {
 
             return list.get(idx);
         }
+        if (expr instanceof Expr.Logical) {
+    Expr.Logical logical = (Expr.Logical) expr;
 
-        if (expr instanceof Expr.Binary) {
-            Expr.Binary binary = (Expr.Binary) expr;
-            Object left = evaluate(binary.left);
-            Object right = evaluate(binary.right);
+    if (logical.operator.type == TokenType.NOT) {
+        Object right = evaluate(logical.right);
+        return !isTruthy(right);
+    }
 
-            Object result;
+    Object left = evaluate(logical.left);
 
-            switch (binary.operator.type) {
-                case PLUS:
-                    checkNumberOperands(left, right);
-                    result = (double) left + (double) right;
-                    break;
-                case MINUS:
-                    checkNumberOperands(left, right);
-                    result = (double) left - (double) right;
-                    break;
-                case STAR:
-                    checkNumberOperands(left, right);
-                    result = (double) left * (double) right;
-                    break;
-                case SLASH:
-                    checkNumberOperands(left, right);
-                    result = (double) left / (double) right;
-                    break;
-                case GREATER:
-                    result = (double) left > (double) right;
-                    break;
-                case GREATER_EQUAL:
-                    result = (double) left >= (double) right;
-                    break;
-                case LESS:
-                    result = (double) left < (double) right;
-                    break;
-                case LESS_EQUAL:
-                    result = (double) left <= (double) right;
-                    break;
-                case EQUAL_EQUAL:
-                    result = left.equals(right);
-                    break;
-                case BANG_EQUAL:
-                    result = !left.equals(right);
-                    break;
-                default:
-                    throw new RuntimeException("Runtime Error: Unknown operator.");
-            }
+    if (logical.operator.type == TokenType.OR) {
+        if (isTruthy(left)) return true; // short-circuit
+    }
 
-            trace("Evaluate " + left + " " + binary.operator.lexeme + " " + right + " → " + result);
-            return result;
+    if (logical.operator.type == TokenType.AND) {
+        if (!isTruthy(left)) return false; // short-circuit
+    }
+
+    Object right = evaluate(logical.right);
+    return isTruthy(right);
+}
+
+    // ---------------- PROPERTY ACCESS ----------------
+if (expr instanceof Expr.Get) {
+    Expr.Get get = (Expr.Get) expr;
+    Object object = evaluate(get.object);
+
+    if (object instanceof FluxInstance) {
+        Object value = ((FluxInstance) object).get(get.name);
+
+        // ⭐⭐ THIS IS THE MISSING PIECE ⭐⭐
+        if (value instanceof FluxFunction) {
+            return ((FluxFunction) value).bind((FluxInstance) object);
         }
 
-        throw new RuntimeException("Runtime Error: Unknown expression.");
+        return value;
+    }
+
+    throw runtimeError("Only instances have properties.");
+}
+
+// ---------------- PROPERTY SET ----------------
+if (expr instanceof Expr.Set) {
+    Expr.Set set = (Expr.Set) expr;
+    Object object = evaluate(set.object);
+
+    if (!(object instanceof runtime.FluxInstance)) {
+        throw runtimeError("Only instances have fields.");
+    }
+
+    Object value = evaluate(set.value);
+    ((runtime.FluxInstance) object).set(set.name, value);
+    return value;
+}
+
+
+        if (expr instanceof Expr.Call) {
+    Expr.Call call = (Expr.Call) expr;
+
+    Object callee = evaluate(call.callee);
+
+    // ---------- CLASS CONSTRUCTOR ----------
+    if (callee instanceof FluxClass) {
+        FluxInstance instance = ((FluxClass) callee).instantiate();
+
+        // Call init if exists
+        FluxFunction init = ((FluxClass) callee).findMethod("init");
+        if (init != null) {
+            FluxFunction boundInit = init.bind(instance);
+            List<Object> args = new ArrayList<>(); // no args for init
+            Environment localEnv = new Environment(boundInit.getClosure());
+            Object result = null;
+            Environment previous = this.environment;
+            try {
+                this.environment = localEnv;
+                for (Stmt stmt : boundInit.getBody()) {
+                    execute(stmt);
+                }
+            } catch (ReturnSignal r) {
+                result = r.value;
+            } finally {
+                this.environment = previous;
+            }
+        }
+
+        return instance;
+    }
+
+    // ---------- BUILTIN FUNCTION ----------
+    if (callee instanceof BuiltinFunction) {
+        BuiltinFunction fn = (BuiltinFunction) callee;
+        List<Object> args = new ArrayList<>();
+        for (Expr arg : call.arguments) {
+            args.add(evaluate(arg));
+        }
+        return fn.call(args);
+    }
+
+    // ---------- USER FUNCTION / METHOD ----------
+    if (!(callee instanceof FluxFunction)) {
+        throw runtimeError("Can only call functions and classes.");
+    }
+
+    FluxFunction function = (FluxFunction) callee;
+
+    if (call.arguments.size() != function.getParams().size()) {
+        throw runtimeError(
+            "Expected " + function.getParams().size() +
+            " arguments but got " + call.arguments.size() + "."
+        );
+    }
+
+    Environment localEnv = new Environment(function.getClosure());
+
+    for (int i = 0; i < function.getParams().size(); i++) {
+        String param = function.getParams().get(i).lexeme;
+        Object value = evaluate(call.arguments.get(i));
+        localEnv.define(param, value);
+    }
+
+    Object result = null;
+    Environment previous = this.environment;
+
+    try {
+        this.environment = localEnv;
+        for (Stmt stmt : function.getBody()) {
+            execute(stmt);
+        }
+    }
+    catch (ReturnSignal r) {
+        result = r.value;
+    }
+    finally {
+        this.environment = previous;
+    }
+
+    return result;
+}
+
+
+if (expr instanceof Expr.Get) {
+    Expr.Get get = (Expr.Get) expr;
+    Object object = evaluate(get.object);
+
+    if (object instanceof FluxInstance) {
+        Object value = ((FluxInstance) object).get(get.name);
+
+        // ⭐⭐ THIS IS THE MISSING PIECE ⭐⭐
+        if (value instanceof FluxFunction) {
+            return ((FluxFunction) value).bind((FluxInstance) object);
+        }
+
+        return value;
+    }
+
+    throw runtimeError("Only instances have properties.");
+}
+
+
+if (expr instanceof Expr.Set) {
+    Expr.Set set = (Expr.Set) expr;
+    Object object = evaluate(set.object);
+
+    if (!(object instanceof runtime.FluxInstance)) {
+        throw runtimeError("Only instances have fields.");
+    }
+
+    Object value = evaluate(set.value);
+    ((runtime.FluxInstance) object).set(set.name, value);
+    return value;
+}
+
+if (expr instanceof Expr.Binary) {
+    Expr.Binary binary = (Expr.Binary) expr;
+    Object left = evaluate(binary.left);
+    Object right = evaluate(binary.right);
+
+    Object result;
+
+    switch (binary.operator.type) {
+
+    case PLUS:
+        // Number addition OR string concatenation
+        if ((left instanceof Double || left == null) && right instanceof Double) {
+            double l = left == null ? 0.0 : (double) left;
+            result = l + (double) right;
+        } else {
+            result = stringify(left) + stringify(right);
+        }
+        break;
+
+    case MINUS:
+        checkNumberOperands(left, right);
+        double l = left == null ? 0.0 : (double) left;
+        double r = right == null ? 0.0 : (double) right;
+        result = l - r;
+        break;
+
+    case STAR:
+        checkNumberOperands(left, right);
+        l = left == null ? 0.0 : (double) left;
+        r = right == null ? 0.0 : (double) right;
+        result = l * r;
+        break;
+
+    case SLASH:
+        checkNumberOperands(left, right);
+        l = left == null ? 0.0 : (double) left;
+        r = right == null ? 0.0 : (double) right;
+        result = l / r;
+        break;
+
+    case GREATER:
+        l = left == null ? 0.0 : (double) left;
+        r = right == null ? 0.0 : (double) right;
+        result = l > r;
+        break;
+
+    case GREATER_EQUAL:
+        l = left == null ? 0.0 : (double) left;
+        r = right == null ? 0.0 : (double) right;
+        result = l >= r;
+        break;
+
+    case LESS:
+        l = left == null ? 0.0 : (double) left;
+        r = right == null ? 0.0 : (double) right;
+        result = l < r;
+        break;
+
+    case LESS_EQUAL:
+        l = left == null ? 0.0 : (double) left;
+        r = right == null ? 0.0 : (double) right;
+        result = l <= r;
+        break;
+
+    case EQUAL_EQUAL:
+        result = left.equals(right);
+        break;
+
+    case BANG_EQUAL:
+        result = !left.equals(right);
+        break;
+
+    default:
+        throw new RuntimeException("Runtime Error: Unknown operator.");
+}
+
+
+    trace("Evaluate " + left + " " + binary.operator.lexeme + " → " + result);
+    return result;
+}
+
+throw new RuntimeException("Runtime Error: Unknown expression.");
+
     }
 
     // ===================== HELPERS =====================
@@ -194,11 +474,14 @@ public class Interpreter {
     }
 
     private String stringify(Object value) {
-        return value == null ? "null" : value.toString();
-    }
+    if (value == null) return "null";
+    if (value instanceof FluxFunction) return "<function>";
+    return value.toString();
+}
+
 
     private void checkNumberOperands(Object left, Object right) {
-        if (left instanceof Double && right instanceof Double) return;
+        if ((left instanceof Double || left == null) && (right instanceof Double || right == null)) return;
         throw new RuntimeException("Runtime Error: Operands must be numbers.");
     }
 
@@ -212,6 +495,68 @@ public class Interpreter {
         execute(stmt);
     }
 }
+
+    private void defineBuiltins() {
+
+    // len(array)
+    environment.define("len", new BuiltinFunction("len", new NativeFunction() {
+        @Override
+        public Object call(List<Object> arguments) {
+            Object value = arguments.get(0);
+            if (value instanceof List) {
+                return (double) ((List<?>) value).size();
+            }
+            throw runtimeError("len() expects an array.");
+        }
+
+        @Override
+        public int arity() {
+            return 1;
+        }
+    }));
+
+
+    // type(value)
+    environment.define("type", new BuiltinFunction("type", new NativeFunction() {
+        @Override
+        public Object call(List<Object> arguments) {
+            Object v = arguments.get(0);
+            if (v instanceof Double) return "number";
+            if (v instanceof String) return "string";
+            if (v instanceof Boolean) return "boolean";
+            if (v instanceof List) return "array";
+            if (v instanceof FluxFunction) return "function";
+            return "unknown";
+        }
+
+        @Override
+        public int arity() {
+            return 1;
+        }
+    }));
+
+
+    // range(start, end)
+    environment.define("range", new BuiltinFunction("range", new NativeFunction() {
+        @Override
+        public Object call(List<Object> arguments) {
+            double start = (double) arguments.get(0);
+            double end = (double) arguments.get(1);
+
+            List<Double> result = new ArrayList<>();
+            for (int i = (int) start; i < (int) end; i++) {
+                result.add((double) i);
+            }
+            return result;
+        }
+
+        @Override
+        public int arity() {
+            return 2;
+        }
+    }));
+}
+
     public void dumpEnvironment() {
     System.out.println("Environment:");
     for (var entry : environment.dump().entrySet()) {

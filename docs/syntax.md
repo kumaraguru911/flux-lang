@@ -49,10 +49,40 @@ msg = "Hello, Flux"
 
 ### Booleans
 
-Booleans are produced by comparisons.
+Booleans are produced by comparisons and logical operations.
 
 ```flux
 x > 5
+x > 0 and x < 10
+```
+
+### Arrays
+
+```flux
+nums = [10, 20, 30]
+```
+
+### Functions
+
+Functions are first-class objects.
+
+```flux
+fun greet(name) {
+    print "Hello", name
+}
+```
+
+### Objects
+
+Objects are instances of classes.
+
+```flux
+class Point {
+    x
+    y
+}
+
+p = Point()
 ```
 
 ---
@@ -104,6 +134,13 @@ result = (10 + 5) * 2
 print result
 ```
 
+The `+` operator also concatenates strings:
+
+```flux
+msg = "Hello" + " " + "World"
+print msg
+```
+
 ---
 
 ## Comparison Operators
@@ -122,6 +159,30 @@ x > 5
 ```
 
 Comparison expressions evaluate to boolean values.
+
+---
+
+## Logical Operators
+
+Flux supports logical operators with short-circuit evaluation:
+
+```flux
+and    or    not
+```
+
+Example:
+
+```flux
+x = 7
+
+if x > 0 and x < 10 {
+    print "In range"
+}
+
+if not (x == 3) {
+    print "Not three"
+}
+```
 
 ---
 
@@ -173,6 +234,138 @@ Internally, `for` loops are transformed into `while` loops.
 
 ---
 
+## Break and Continue
+
+Use `break` to exit a loop early, and `continue` to skip to the next iteration.
+
+```flux
+for i = 0 to 10 {
+    if i == 5 {
+        break
+    }
+    if i % 2 == 0 {
+        continue
+    }
+    print i
+}
+```
+
+---
+
+## Functions
+
+Functions are defined using the `fun` keyword.
+
+```flux
+fun greet(name) {
+    print "Hello", name
+}
+
+fun add(a, b) {
+    return a + b
+}
+```
+
+- Functions can have parameters
+- Use `return` to return a value (optional)
+- Functions are first-class objects and can be assigned to variables
+
+### Calling Functions
+
+```flux
+greet("Flux")
+result = add(10, 20)
+```
+
+---
+
+## Lambda Functions
+
+Anonymous functions (lambdas) can be defined inline.
+
+```flux
+double = fun(x) { return x * 2 }
+print double(5)
+```
+
+---
+
+## Classes and Objects
+
+Classes define blueprints for objects.
+
+```flux
+class Point {
+    x
+    y
+
+    fun init() {
+        this.x = 0
+        this.y = 0
+    }
+
+    fun move(dx, dy) {
+        this.x = this.x + dx
+        this.y = this.y + dy
+    }
+}
+```
+
+### Creating Objects
+
+```flux
+p = Point()
+p.move(10, 5)
+print p.x, p.y
+```
+
+- Fields are declared without types
+- Methods are functions defined inside classes
+- Use `this` to access the current instance
+- The `init` method is called automatically when creating an instance
+
+### Field Access
+
+```flux
+p.x = 10
+print p.y
+```
+
+---
+
+## Built-in Functions
+
+Flux provides several built-in functions:
+
+### len(array)
+
+Returns the length of an array.
+
+```flux
+nums = [1, 2, 3]
+print len(nums)  # 3
+```
+
+### type(value)
+
+Returns the type of a value as a string.
+
+```flux
+print type(10)      # "number"
+print type("hello") # "string"
+print type([1,2])   # "array"
+```
+
+### range(start, end)
+
+Creates an array of numbers from start to end-1.
+
+```flux
+nums = range(1, 5)  # [1, 2, 3, 4]
+```
+
+---
+
 ## Exit Statement
 
 The `exit` statement immediately stops program execution.
@@ -202,17 +395,36 @@ Comments are ignored by the lexer.
 ## Example Program
 
 ```flux
-nums = [10, 20, 30]
-sum = 0
+class Counter {
+    fun init() {
+        this.value = 0
+    }
 
-for i = 0 to 2 {
-    sum = sum + nums[i]
+    fun inc() {
+        this.value = this.value + 1
+        return this
+    }
 }
 
-print "Sum =", sum
+fun add(a, b) {
+    return a + b
+}
 
-if sum > 50 {
-    print "Big number"
+c = Counter()
+c.inc().inc()
+print "Count:", c.value
+
+nums = range(1, 5)
+sum = 0
+
+for i = 0 to len(nums) - 1 {
+    sum = add(sum, nums[i])
+}
+
+print "Sum:", sum
+
+if sum > 10 and not (sum == 0) {
+    print "Big sum"
 }
 ```
 

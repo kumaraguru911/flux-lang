@@ -1,9 +1,7 @@
 package ast;
 
-import lexer.Token;
-import lexer.TokenType;
-
 import java.util.List;
+import lexer.Token;
 
 public abstract class Stmt {
 
@@ -25,6 +23,33 @@ public abstract class Stmt {
         this.statements = statements;
     }
 }
+    public static class Expression extends Stmt {
+    public final Expr expression;
+
+    public Expression(Expr expression) {
+        this.expression = expression;
+    }
+}
+    public static class Return extends Stmt {
+    public final Expr value; // can be null
+
+    public Return(Expr value) {
+        this.value = value;
+    }
+}
+
+    public static class Class extends Stmt {
+    public final Token name;
+    public final List<Token> fields;
+    public final List<Stmt.Function> methods;
+
+    public Class(Token name, List<Token> fields, List<Stmt.Function> methods) {
+        this.name = name;
+        this.fields = fields;
+        this.methods = methods;
+    }
+}
+
 
     public static class Assignment extends Stmt {
         public final Token name;
@@ -35,6 +60,11 @@ public abstract class Stmt {
             this.value = value;
         }
     }
+
+    public static class Break extends Stmt {}
+
+    public static class Continue extends Stmt {}
+
 
     public static class If extends Stmt {
         public final Expr condition;
@@ -57,6 +87,19 @@ public abstract class Stmt {
         this.body = body;
     }
 }
+
+    public static class Function extends Stmt {
+    public final Token name;
+    public final List<Token> params;
+    public final List<Stmt> body;
+
+    public Function(Token name, List<Token> params, List<Stmt> body) {
+        this.name = name;
+        this.params = params;
+        this.body = body;
+    }
+}
+
 
 
 }

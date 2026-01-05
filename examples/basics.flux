@@ -1,5 +1,7 @@
-x = 10
-print x
-nums = [1,2,3]
-print nums[1]
-exit
+class Point {
+    x
+    y
+}
+
+p = Point()
+print p

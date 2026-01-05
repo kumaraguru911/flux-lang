@@ -27,7 +27,15 @@ public class Lexer {
         keywords.put("exit", TokenType.EXIT);
         keywords.put("for", TokenType.FOR);
         keywords.put("to", TokenType.TO);
-
+        keywords.put("fun", TokenType.FUN);
+        keywords.put("return", TokenType.RETURN);
+        keywords.put("and", TokenType.AND);
+        keywords.put("or", TokenType.OR);
+        keywords.put("not", TokenType.NOT);
+        keywords.put("break", TokenType.BREAK);
+        keywords.put("continue", TokenType.CONTINUE);
+        keywords.put("class", TokenType.CLASS);
+        keywords.put("this", TokenType.THIS);
 
     }
 
@@ -78,6 +86,9 @@ case ']':
             break;
         case '/':
             addToken(TokenType.SLASH);
+            break;
+        case '.':
+            addToken(TokenType.DOT);
             break;
 
         case '=':

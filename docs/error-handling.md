@@ -46,6 +46,7 @@ Expected expression after '=' at line 3.
 ---
 
 ## Runtime Errors
+
 Runtime errors occur while executing a syntactically valid program.
 
 Flux stops execution immediately when a runtime error is encountered.
@@ -100,7 +101,7 @@ Error message:
 
 ```
 [Flux Runtime Error]
-Array index out of bounds (index = 5, size = 3).
+Array index out of bounds.
 ```
 
 ---
@@ -118,7 +119,74 @@ Error message:
 
 ```
 [Flux Runtime Error]
-Not an array.
+Tried to index a non-array value.
+```
+
+---
+
+### Function Call Errors
+
+Occurs when calling a non-function or with wrong number of arguments.
+
+```flux
+x = 10
+x()
+```
+
+Error message:
+
+```
+[Flux Runtime Error]
+Can only call functions and classes.
+```
+
+```flux
+fun add(a, b) { return a + b }
+add(1)
+```
+
+Error message:
+
+```
+[Flux Runtime Error]
+Expected 2 arguments but got 1.
+```
+
+---
+
+### Property Access Errors
+
+Occurs when accessing properties on non-objects.
+
+```flux
+x = 10
+print x.field
+```
+
+Error message:
+
+```
+[Flux Runtime Error]
+Only instances have properties.
+```
+
+---
+
+### Undefined Property Errors
+
+Occurs when accessing a non-existent property.
+
+```flux
+class Point { x }
+p = Point()
+print p.y
+```
+
+Error message:
+
+```
+[Flux Runtime Error]
+Undefined property 'y'.
 ```
 
 ---

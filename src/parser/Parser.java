@@ -2,11 +2,10 @@ package parser;
 
 import ast.Expr;
 import ast.Stmt;
-import lexer.Token;
-import lexer.TokenType;
-
 import java.util.ArrayList;
 import java.util.List;
+import lexer.Token;
+import lexer.TokenType;
 
 public class Parser {
 
@@ -18,20 +17,38 @@ public class Parser {
     }
 
     public List<Stmt> parse() {
-        List<Stmt> statements = new ArrayList<>();
-        while (!isAtEnd()) {
-            statements.add(statement());
-        }
-        return statements;
+    List<Stmt> statements = new ArrayList<>();
+    while (!isAtEnd()) {
+        statements.add(declaration());
     }
+    return statements;
+}
+
+    private Stmt declaration() {
+
+    // ✅ 1️⃣ CLASS FIRST (highest priority)
+    if (match(TokenType.CLASS)) return classDeclaration();
+
+    // ✅ 2️⃣ Named functions
+    if (check(TokenType.FUN) && checkNext(TokenType.IDENTIFIER)) {
+        advance(); // consume 'fun'
+        return functionDeclaration();
+    }
+
+    return statement();
+}
+
 
     private Stmt statement() {
     if (match(TokenType.PRINT)) return printStatement();
     if (match(TokenType.EXIT)) return new Stmt.Exit();
+    if (match(TokenType.BREAK)) return new Stmt.Break();
+    if (match(TokenType.CONTINUE)) return new Stmt.Continue();
     if (match(TokenType.IF)) return ifStatement();
     if (match(TokenType.WHILE)) return whileStatement();
     if (match(TokenType.FOR)) return forStatement();
-    return assignmentStatement();
+    if (match(TokenType.RETURN)) return returnStatement();
+    return expressionStatement();
 }
 
 
@@ -46,9 +63,132 @@ public class Parser {
     return new Stmt.Print(values);
 }
 
+    private Stmt expressionStatement() {
+    Expr expr = expression();
+
+    if (match(TokenType.EQUAL)) {
+        Expr value = expression();
+
+        if (expr instanceof Expr.Variable) {
+            return new Stmt.Assignment(
+                ((Expr.Variable) expr).name,
+                value
+            );
+        }
+        else if (expr instanceof Expr.Get) {
+            Expr.Get get = (Expr.Get) expr;
+            return new Stmt.Expression(
+                new Expr.Set(get.object, get.name, value)
+            );
+        }
+
+        throw error(peek(), "Invalid assignment target.");
+    }
+
+    return new Stmt.Expression(expr);
+}
+
+    private Stmt returnStatement() {
+    Expr value = null;
+
+    if (!check(TokenType.RIGHT_BRACE)) {
+        value = expression();
+    }
+
+    return new Stmt.Return(value);
+}
+
+    private Stmt classDeclaration() {
+    Token name = consume(TokenType.IDENTIFIER, "Expected class name.");
+    consume(TokenType.LEFT_BRACE, "Expected '{' after class name.");
+
+    List<Token> fields = new ArrayList<>();
+    List<Stmt.Function> methods = new ArrayList<>();
+
+    while (!check(TokenType.RIGHT_BRACE) && !isAtEnd()) {
+        if (match(TokenType.FUN)) {
+            methods.add((Stmt.Function) functionDeclaration());
+        } else {
+            fields.add(
+                consume(TokenType.IDENTIFIER, "Expected field name.")
+            );
+        }
+    }
+
+    consume(TokenType.RIGHT_BRACE, "Expected '}' after class body.");
+    return new Stmt.Class(name, fields, methods);
+}
+
+
+
+    private Stmt functionDeclaration() {
+    Token name = consume(TokenType.IDENTIFIER, "Expected function name.");
+
+    consume(TokenType.LEFT_PAREN, "Expected '(' after function name.");
+
+    List<Token> parameters = new ArrayList<>();
+    if (!check(TokenType.RIGHT_PAREN)) {
+        do {
+            parameters.add(
+                consume(TokenType.IDENTIFIER, "Expected parameter name.")
+            );
+        } while (match(TokenType.COMMA));
+    }
+
+    consume(TokenType.RIGHT_PAREN, "Expected ')' after parameters.");
+    consume(TokenType.LEFT_BRACE, "Expected '{' before function body.");
+
+    List<Stmt> body = new ArrayList<>();
+    while (!check(TokenType.RIGHT_BRACE) && !isAtEnd()) {
+        body.add(declaration());
+    }
+    consume(TokenType.RIGHT_BRACE, "Expected '}' after function body.");
+
+    return new Stmt.Function(name, parameters, body);
+}
+
+    private Expr call() {
+    Expr expr = primary();
+
+    while (true) {
+        if (match(TokenType.LEFT_PAREN)) {
+            expr = finishCall(expr);
+        }
+        else if (match(TokenType.DOT)) {
+            Token name = consume(
+                TokenType.IDENTIFIER,
+                "Expected property name after '.'."
+            );
+            expr = new Expr.Get(expr, name);
+        }
+        else {
+            break;
+        }
+    }
+
+    return expr;
+}
+
+
+
+private Expr finishCall(Expr callee) {
+    List<Expr> arguments = new ArrayList<>();
+
+    if (!check(TokenType.RIGHT_PAREN)) {
+        do {
+            arguments.add(expression());
+        } while (match(TokenType.COMMA));
+    }
+
+    consume(TokenType.RIGHT_PAREN, "Expected ')' after arguments.");
+
+    return new Expr.Call(callee, arguments);
+}
+
 
     private Stmt ifStatement() {
     Expr condition = expression();
+
     consume(TokenType.LEFT_BRACE, "Expected '{' after if condition.");
 
     List<Stmt> thenBody = new ArrayList<>();
@@ -69,6 +209,7 @@ public class Parser {
 
     return new Stmt.If(condition, thenBody, elseBody);
 }
+
     private Stmt forStatement() {
     // for i = start to end { body }
 
@@ -152,7 +293,7 @@ public class Parser {
     }
 
     private Expr expression() {
-        return comparison();
+        return or();
     }
 
     private Expr comparison() {
@@ -180,16 +321,42 @@ public class Parser {
     }
 
     private Expr factor() {
-        Expr expr = primary();
+    Expr expr = call();
 
-        while (match(TokenType.STAR, TokenType.SLASH)) {
-            Token operator = previous();
-            Expr right = primary();
-            expr = new Expr.Binary(expr, operator, right);
-        }
-
-        return expr;
+    while (match(TokenType.STAR, TokenType.SLASH)) {
+        Token operator = previous();
+        Expr right = call();
+        expr = new Expr.Binary(expr, operator, right);
     }
+
+    return expr;
+}
+
+    private Expr or() {
+    Expr expr = and();
+
+    while (match(TokenType.OR)) {
+        Token operator = previous();
+        Expr right = and();
+        expr = new Expr.Logical(expr, operator, right);
+    }
+
+    return expr;
+}
+
+private Expr and() {
+    Expr expr = comparison();
+
+    while (match(TokenType.AND)) {
+        Token operator = previous();
+        Expr right = comparison();
+        expr = new Expr.Logical(expr, operator, right);
+    }
+
+    return expr;
+}
+
+
 
     private Stmt whileStatement() {
     Expr condition = expression();
@@ -206,13 +373,49 @@ public class Parser {
 
 
     private Expr primary() {
+
+    // 1️⃣ Parenthesized expression
+    if (match(TokenType.LEFT_PAREN)) {
+        Expr expr = expression();
+        consume(TokenType.RIGHT_PAREN, "Expected ')' after expression.");
+        return expr;
+    }
+    if (match(TokenType.FUN)) {
+    consume(TokenType.LEFT_PAREN, "Expected '(' after 'fun'.");
+
+    List<Token> params = new ArrayList<>();
+    if (!check(TokenType.RIGHT_PAREN)) {
+        do {
+            params.add(
+                consume(TokenType.IDENTIFIER, "Expected parameter name.")
+            );
+        } while (match(TokenType.COMMA));
+    }
+
+    consume(TokenType.RIGHT_PAREN, "Expected ')' after parameters.");
+    consume(TokenType.LEFT_BRACE, "Expected '{' before lambda body.");
+
+    List<Stmt> body = new ArrayList<>();
+    while (!check(TokenType.RIGHT_BRACE) && !isAtEnd()) {
+        body.add(statement());
+    }
+
+    consume(TokenType.RIGHT_BRACE, "Expected '}' after lambda body.");
+    return new Expr.Lambda(params, body);
+}
+
+
+    // 2️⃣ Unary NOT
+    if (match(TokenType.NOT)) {
+        Token operator = previous();
+        Expr right = primary();
+        return new Expr.Logical(null, operator, right);
+    }
+
+    // 3️⃣ Literals
     if (match(TokenType.NUMBER)) {
         return new Expr.Literal(previous().literal);
     }
-
-    if (match(TokenType.LEFT_BRACKET)) {
-    return arrayLiteral();
-}
 
     if (match(TokenType.STRING)) {
         return new Expr.Literal(previous().literal);
@@ -225,21 +428,31 @@ public class Parser {
     if (match(TokenType.FALSE)) {
         return new Expr.Literal(false);
     }
-
-    if (match(TokenType.IDENTIFIER)) {
-    Expr expr = new Expr.Variable(previous());
-
+    // 4️⃣ Arrays
     if (match(TokenType.LEFT_BRACKET)) {
-        Expr index = expression();
-        consume(TokenType.RIGHT_BRACKET, "Expected ']' after index.");
-        return new Expr.Index(expr, index);
+        return arrayLiteral();
     }
 
-    return expr;
+    if (match(TokenType.THIS)) {
+    return new Expr.This(previous());
 }
+
+    // 5️⃣ Variables + indexing + calls
+    if (match(TokenType.IDENTIFIER)) {
+        Expr expr = new Expr.Variable(previous());
+
+        if (match(TokenType.LEFT_BRACKET)) {
+            Expr index = expression();
+            consume(TokenType.RIGHT_BRACKET, "Expected ']' after index.");
+            return new Expr.Index(expr, index);
+        }
+
+        return expr;
+    }
 
     throw error(peek(), "Expected expression.");
 }
+
 
 
     // ---------- Utility Methods ----------
@@ -275,6 +488,11 @@ public class Parser {
     private Token previous() {
         return tokens.get(current - 1);
     }
+
+    private boolean checkNext(TokenType type) {
+    if (current + 1 >= tokens.size()) return false;
+    return tokens.get(current + 1).type == type;
+}
 
     private Token consume(TokenType type, String message) {
         if (check(type)) return advance();

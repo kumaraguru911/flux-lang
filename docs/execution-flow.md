@@ -74,13 +74,13 @@ Responsibility:
 Example:
 
 ```flux
-x = 10
+fun add(a, b) { return a + b }
 ```
 
 Tokenized as:
 
 ```
-IDENTIFIER(x) EQUAL NUMBER(10)
+FUN IDENTIFIER(add) LEFT_PAREN IDENTIFIER(a) COMMA IDENTIFIER(b) RIGHT_PAREN LEFT_BRACE RETURN IDENTIFIER(a) PLUS IDENTIFIER(b) RIGHT_BRACE
 ```
 
 The lexer abstracts away characters and whitespace, producing a clean
@@ -95,10 +95,12 @@ Responsibility:
 - Validates token order against Flux grammar
 - Builds the Abstract Syntax Tree (AST)
 
-Important behavior:
+Important behaviors:
 
 - `for` loops are internally transformed into `while` loops
-- This reduces interpreter complexity while preserving expressiveness
+- Functions and classes create scoped declarations
+- Method calls are parsed as property access followed by function calls
+- Logical operators support short-circuit evaluation
 
 Syntax errors are detected at this stage.
 
@@ -122,18 +124,19 @@ This feature is especially useful for learning and debugging.
 ---
 
 ## 6. Interpretation (Execution)
+
 Responsibility:
 
-Walks the AST node by node
-
-Executes statements sequentially
-
-Evaluates expressions recursively
+- Walks the AST node by node
+- Executes statements sequentially
+- Evaluates expressions recursively
 
 Key behaviors:
 
-- Control flow (`if`, `while`, `for`) is resolved at runtime
-- Expressions are evaluated dynamically
+- Control flow (`if`, `while`, `for`, `break`, `continue`) is resolved at runtime
+- Functions are defined and can be called with arguments
+- Classes are instantiated, creating objects with fields and methods
+- Expressions are evaluated dynamically with proper operator precedence
 - Execution trace mode logs internal decisions
 
 Trace mode:
@@ -145,16 +148,20 @@ flux trace program.flux
 ---
 
 ## 7. Runtime Environment Management
+
 Responsibility:
 
-Stores variable names and their current values
-
-Maintains program state throughout execution
+- Stores variable names and their current values
+- Maintains program state throughout execution
+- Supports nested scopes for functions, classes, and blocks
 
 Capabilities:
 
-- Supports numbers, strings, arrays, and indexing
-- Detects undefined variables
+- Supports numbers, strings, booleans, arrays, functions, and objects
+- Handles closures for lambda functions
+- Provides method binding for object-oriented calls
+- Detects undefined variables and runtime errors
+- Includes built-in functions (`len`, `type`, `range`)
 - Provides environment inspection:
 
 ```bash
