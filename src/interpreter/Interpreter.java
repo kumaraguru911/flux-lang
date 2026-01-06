@@ -3,7 +3,9 @@ package interpreter;
 import ast.Expr;
 import ast.Stmt;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import lexer.TokenType;
 import runtime.BuiltinFunction;
 import runtime.Environment;
@@ -11,6 +13,7 @@ import runtime.ExitSignal;
 import runtime.FluxClass;
 import runtime.FluxFunction;
 import runtime.FluxInstance;
+import runtime.FluxString;
 import runtime.NativeFunction;
 import runtime.ReturnSignal;
 
@@ -160,7 +163,11 @@ else if (stmt instanceof Stmt.Continue) {
     private Object evaluate(Expr expr) {
 
         if (expr instanceof Expr.Literal) {
-            return ((Expr.Literal) expr).value;
+            Object value = ((Expr.Literal) expr).value;
+            if (value instanceof String) {
+                return new FluxString((String) value);
+            }
+            return value;
         }
 
         if (expr instanceof Expr.Variable) {
@@ -174,6 +181,22 @@ else if (stmt instanceof Stmt.Continue) {
             }
             return values;
         }
+
+        if (expr instanceof Expr.Map) {
+            Map<Object, Object> map = new HashMap<>();
+            List<Expr> keys = ((Expr.Map) expr).keys;
+            List<Expr> values = ((Expr.Map) expr).values;
+            for (int i = 0; i < keys.size(); i++) {
+                Object key = evaluate(keys.get(i));
+                if (key instanceof FluxString) {
+                    key = ((FluxString) key).getValue();
+                }
+                Object value = evaluate(values.get(i));
+                map.put(key, value);
+            }
+            return map;
+        }
+
         if (expr instanceof Expr.Lambda) {
     Expr.Lambda lambda = (Expr.Lambda) expr;
 
@@ -194,18 +217,22 @@ else if (stmt instanceof Stmt.Continue) {
             Object arrayObj = evaluate(((Expr.Index) expr).array);
             Object indexObj = evaluate(((Expr.Index) expr).index);
 
-            if (!(arrayObj instanceof List)) {
-                throw runtimeError("Tried to index a non-array value.");
+            if (arrayObj instanceof List) {
+                int idx = ((Double) indexObj).intValue();
+                List<?> list = (List<?>) arrayObj;
+                if (idx < 0 || idx >= list.size()) {
+                    throw new RuntimeException("Runtime Error: Array index out of bounds.");
+                }
+                return list.get(idx);
+            } else if (arrayObj instanceof Map) {
+                Object key = indexObj;
+                if (key instanceof FluxString) {
+                    key = ((FluxString) key).getValue();
+                }
+                return ((Map<?, ?>) arrayObj).get(key);
+            } else {
+                throw runtimeError("Tried to index a non-array, non-map value.");
             }
-
-            int idx = ((Double) indexObj).intValue();
-            List<?> list = (List<?>) arrayObj;
-
-            if (idx < 0 || idx >= list.size()) {
-                throw new RuntimeException("Runtime Error: Array index out of bounds.");
-            }
-
-            return list.get(idx);
         }
         if (expr instanceof Expr.Logical) {
     Expr.Logical logical = (Expr.Logical) expr;
@@ -243,9 +270,11 @@ if (expr instanceof Expr.Get) {
         }
 
         return value;
+    } else if (object instanceof FluxString) {
+        return ((FluxString) object).get(get.name);
     }
 
-    throw runtimeError("Only instances have properties.");
+    throw runtimeError("Only instances and strings have properties.");
 }
 
 // ---------------- PROPERTY SET ----------------
@@ -522,9 +551,10 @@ throw new RuntimeException("Runtime Error: Unknown expression.");
         public Object call(List<Object> arguments) {
             Object v = arguments.get(0);
             if (v instanceof Double) return "number";
-            if (v instanceof String) return "string";
+            if (v instanceof FluxString) return "string";
             if (v instanceof Boolean) return "boolean";
             if (v instanceof List) return "array";
+            if (v instanceof Map) return "map";
             if (v instanceof FluxFunction) return "function";
             return "unknown";
         }

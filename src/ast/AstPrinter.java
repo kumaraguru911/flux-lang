@@ -135,6 +135,17 @@ public class AstPrinter {
             printExpr(e, indent + "│  ");
         }
     }
+    else if (expr instanceof Expr.Map) {
+        System.out.println(indent + "Map");
+        List<Expr> keys = ((Expr.Map) expr).keys;
+        List<Expr> values = ((Expr.Map) expr).values;
+        for (int i = 0; i < keys.size(); i++) {
+            System.out.println(indent + "├─ Key");
+            printExpr(keys.get(i), indent + "│  ");
+            System.out.println(indent + "└─ Value");
+            printExpr(values.get(i), indent + (i < keys.size() - 1 ? "│  " : "   "));
+        }
+    }
     else if (expr instanceof Expr.Index) {
         System.out.println(indent + "Index");
         printExpr(((Expr.Index) expr).array, indent + "├─ ");

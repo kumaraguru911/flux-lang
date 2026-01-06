@@ -55,6 +55,16 @@ public static class This extends Expr {
     }
 }
 
+    public static class Map extends Expr {
+        public final List<Expr> keys;
+        public final List<Expr> values;
+
+        public Map(List<Expr> keys, List<Expr> values) {
+            this.keys = keys;
+            this.values = values;
+        }
+    }
+
 public static class Index extends Expr {
     public final Expr array;
     public final Expr index;

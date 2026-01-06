@@ -19,6 +19,8 @@ for students, beginners, and anyone curious about language design.
 - Dynamic typing
 - Variables and expressions
 - Arrays with indexed access
+- Dictionaries/Maps with key-value access
+- Strings with methods (`len`, `substring`)
 - Conditional statements (`if / else`)
 - Loops (`while`, `for`) with `break` and `continue`
 - Functions (named and anonymous/lambda)
@@ -161,6 +163,14 @@ print "Sum:", sum
 if sum > 10 and not (sum == 0) {
     print "Big sum"
 }
+
+# Maps and string methods
+person = {"name": "Alice", "age": 30}
+print person["name"]
+
+greeting = "Hello, World!"
+print greeting.len()
+print greeting.substring(0, 5)
 ```
 
 ---

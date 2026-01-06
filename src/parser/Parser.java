@@ -285,6 +285,24 @@ private Expr finishCall(Expr callee) {
     return new Expr.Array(elements);
 }
 
+    private Expr mapLiteral() {
+        List<Expr> keys = new ArrayList<>();
+        List<Expr> values = new ArrayList<>();
+
+        if (!check(TokenType.RIGHT_BRACE)) {
+            do {
+                Expr key = expression();
+                consume(TokenType.COLON, "Expected ':' after key.");
+                Expr value = expression();
+                keys.add(key);
+                values.add(value);
+            } while (match(TokenType.COMMA));
+        }
+
+        consume(TokenType.RIGHT_BRACE, "Expected '}' after map elements.");
+        return new Expr.Map(keys, values);
+    }
+
     private Stmt assignmentStatement() {
         Token name = consume(TokenType.IDENTIFIER, "Expected variable name.");
         consume(TokenType.EQUAL, "Expected '=' after variable name.");
@@ -431,6 +449,11 @@ private Expr and() {
     // 4️⃣ Arrays
     if (match(TokenType.LEFT_BRACKET)) {
         return arrayLiteral();
+    }
+
+    // 5️⃣ Maps
+    if (match(TokenType.LEFT_BRACE)) {
+        return mapLiteral();
     }
 
     if (match(TokenType.THIS)) {

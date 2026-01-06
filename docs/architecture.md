@@ -37,7 +37,7 @@ Each stage transforms data into a more structured representation.
 - Identifiers (`x`, `sum`, `nums`)
 - Literals (`10`, `"hello"`, `true`, `false`)
 - Operators (`+`, `-`, `>`, `==`, `=`, `.`, `[`, `]`)
-- Symbols (`(`, `)`, `{`, `}`, `,`, `#`)
+- Symbols (`(`, `)`, `{`, `}`, `,`, `:`, `#`)
 
 **Why this matters:**
 Separating lexing from parsing simplifies syntax analysis and error handling.
@@ -67,7 +67,7 @@ Separating lexing from parsing simplifies syntax analysis and error handling.
 
 **Supported constructs:**
 - Statements: Print, Expression, Assignment, If/Else, While, For, Function, Class, Return, Break, Continue, Exit
-- Expressions: Binary, Unary, Literal, Variable, Call, Get, Set, Array, Index, Lambda, Logical
+- Expressions: Binary, Unary, Literal, Variable, Call, Get, Set, Array, Index, Map, Lambda, Logical
 
 **Why AST is important:**
 - Enables AST visualization (`flux ast`)
@@ -104,7 +104,7 @@ Separating lexing from parsing simplifies syntax analysis and error handling.
 
 **Additional capabilities:**
 - Environment dump (`flux env`) for runtime inspection
-- Supports arrays, objects, and functions as first-class values
+- Supports arrays, maps, strings with methods, objects, and functions as first-class values
 - Handles undefined variable errors safely
 - Built-in functions (`len`, `type`, `range`)
 

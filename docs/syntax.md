@@ -47,6 +47,16 @@ b = 3.5
 msg = "Hello, Flux"
 ```
 
+#### String Methods
+
+Strings have built-in methods:
+
+```flux
+s = "hello world"
+print s.len()              # 11
+print s.substring(0, 5)    # "hello"
+```
+
 ### Booleans
 
 Booleans are produced by comparisons and logical operations.
@@ -60,6 +70,20 @@ x > 0 and x < 10
 
 ```flux
 nums = [10, 20, 30]
+```
+
+### Maps
+
+Maps are key-value collections.
+
+```flux
+person = {"name": "Alice", "age": 30}
+```
+
+Access map values using bracket notation:
+
+```flux
+print person["name"]  # Alice
 ```
 
 ### Functions

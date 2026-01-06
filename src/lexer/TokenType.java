@@ -30,5 +30,5 @@ public enum TokenType {
 
 
     // Special
-    EOF, COMMA, EXIT,
+    EOF, COMMA, COLON, EXIT,
 }
