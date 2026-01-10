@@ -8,13 +8,13 @@ public enum TokenType {
 
 
     // Operators
-    PLUS, MINUS, STAR, SLASH,
+    PLUS, MINUS, STAR, SLASH, PERCENT,
     EQUAL, EQUAL_EQUAL,
     GREATER, LESS, TRUE, FALSE,
     LESS_EQUAL,
     GREATER_EQUAL,
     BANG_EQUAL,
-    FUN, RETURN,
+    FUN, RETURN, NULL,
 
 
     // Literals

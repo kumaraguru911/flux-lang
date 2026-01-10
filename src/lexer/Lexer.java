@@ -36,6 +36,7 @@ public class Lexer {
         keywords.put("continue", TokenType.CONTINUE);
         keywords.put("class", TokenType.CLASS);
         keywords.put("this", TokenType.THIS);
+        keywords.put("null", TokenType.NULL);
 
     }
 
@@ -89,6 +90,9 @@ case ']':
             break;
         case '/':
             addToken(TokenType.SLASH);
+            break;
+        case '%':
+            addToken(TokenType.PERCENT);
             break;
         case '.':
             addToken(TokenType.DOT);

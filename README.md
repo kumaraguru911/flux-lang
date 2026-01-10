@@ -14,23 +14,38 @@ for students, beginners, and anyone curious about language design.
 
 ## ✨ Features
 
+### Core Language
 - Built entirely from scratch (no external frameworks)
 - Lexer → Parser → AST → Interpreter pipeline
-- Dynamic typing
-- Variables and expressions
-- Arrays with indexed access
-- Dictionaries/Maps with key-value access
-- Strings with methods (`len`, `substring`)
-- Conditional statements (`if / else`)
-- Loops (`while`, `for`) with `break` and `continue`
-- Functions (named and anonymous/lambda)
-- Classes and object-oriented programming
-- Methods and `this` keyword
-- Logical operators (`and`, `or`, `not`)
-- Built-in functions (`len`, `type`, `range`)
-- Graceful program termination (`exit`)
+- Dynamic typing with null/nil support
+- Variables and expressions with negative number support
 - Comments (`#`)
 - Beginner-friendly error messages
+
+### Data Types & Collections
+- Arrays with indexed access and **8 methods** (push, pop, sort, reverse, etc.)
+- Dictionaries/Maps with key-value access
+- Strings with **8 methods** (upper, lower, split, trim, startsWith, endsWith, etc.)
+- Numbers with **modulo operator** (`%`)
+
+### Control Flow
+- Conditional statements (`if / else`)
+- Loops (`while`, `for`) with `break` and `continue`
+- Logical operators (`and`, `or`, `not`) with short-circuit evaluation
+
+### Functions & OOP
+- Named and anonymous/lambda functions
+- Functions with closures and lexical scoping
+- Classes and object-oriented programming
+- Methods and `this` keyword
+
+### Built-in Functions (12 total)
+- **Type/Array**: `len()`, `type()`, `range()`
+- **Math**: `floor()`, `ceil()`, `round()`, `sqrt()`, `abs()`, `min()`, `max()`
+- **Conversion**: `toNumber()`, `toString()`
+
+### Other Features
+- Graceful program termination (`exit`)
 
 ---
 
@@ -44,6 +59,22 @@ Flux exposes its internals through powerful tooling:
 - **REPL** – interactive Read–Eval–Print Loop  
 
 These features make Flux an excellent **educational language**.
+
+---
+
+## 🚀 Recent Enhancements (January 2026)
+
+The runtime has been significantly enhanced with:
+
+- ✅ **Modulo Operator** – `%` for remainder operations
+- ✅ **Array Methods** – `push()`, `pop()`, `shift()`, `unshift()`, `sort()`, `reverse()`, `contains()`, `indexOf()`
+- ✅ **String Methods** – `upper()`, `lower()`, `split()`, `trim()`, `startsWith()`, `endsWith()`
+- ✅ **Math Functions** – `floor()`, `ceil()`, `round()`, `sqrt()`, `abs()`, `min()`, `max()`
+- ✅ **Type Conversion** – `toNumber()`, `toString()`
+- ✅ **Null Support** – Proper null/nil value handling
+- ✅ **Negative Numbers** – Unary minus operator support
+
+See [ENHANCEMENTS.md](ENHANCEMENTS.md) and [QUICK_REFERENCE.md](QUICK_REFERENCE.md) for complete details.
 
 ---
 
@@ -173,18 +204,58 @@ print greeting.len()
 print greeting.substring(0, 5)
 ```
 
+## 🎯 Modern Features Example
+
+```flux
+# Enhanced array operations
+arr = [5, 2, 8, 1, 9]
+arr.sort()
+print "Sorted:", arr                          # [1, 2, 5, 8, 9]
+print "Contains 5:", arr.contains(5)          # true
+
+# Enhanced string operations
+text = "  Flux Language  "
+clean = text.trim().upper()
+words = clean.split(" ")
+print "Words:", words                         # ["FLUX", "LANGUAGE"]
+
+# Math operations with modulo
+for i = 1 to 10 {
+    if i % 2 == 0 {
+        print i, "is even"
+    }
+}
+
+# Type conversion
+value = "42"
+num = toNumber(value)
+print "Double:", num * 2                     # 84.0
+
+# Null handling
+x = null
+if x == null {
+    print "x is null"
+}
+```
+
 ---
 
 ## 📘 Documentation
 
-Detailed documentation is available in the `docs/` folder:
+Detailed documentation is available:
 
+**Core Documentation** (in `docs/` folder):
 - [Architecture Overview](docs/architecture.md)
 - [Execution Flow](docs/execution-flow.md)
 - [Language Syntax](docs/syntax.md)
 - [CLI Reference](docs/cli.md)
 - [Error Handling](docs/error-handling.md)
 - [Design Decisions](docs/design-decisions.md)
+
+**Enhancement Documentation**:
+- [ENHANCEMENTS.md](ENHANCEMENTS.md) – Detailed enhancement guide
+- [QUICK_REFERENCE.md](QUICK_REFERENCE.md) – Quick feature reference
+- [IMPLEMENTATION_COMPLETE.md](IMPLEMENTATION_COMPLETE.md) – Implementation summary
 
 ---
 
@@ -212,9 +283,29 @@ Building Flux involved learning:
 
 ---
 
+## 📚 Test Your Knowledge
+
+Run the comprehensive enhancement demo:
+
+```bash
+.\flux run examples/full_enhancements_demo.flux
+```
+
+This will showcase all new features in action!
+
+---
+
 ## 🏁 Conclusion
-Flux is not just a toy language — it is a complete, inspectable interpreter
+
+Flux is not just a toy language — it is a **complete, inspectable interpreter**
 designed to demonstrate how programming languages work under the hood.
-It serves as both a learning tool and a strong portfolio project.
+With recent enhancements, it now includes:
+
+- ✅ Comprehensive built-in functions
+- ✅ Rich array and string methods
+- ✅ Modern language features (null support, modulo, negative numbers)
+- ✅ Full educational value through inspectable internals
+
+It serves as both a **learning tool** and a **strong portfolio project**.
 
 Built with ❤️ to learn how languages really work.

@@ -10,6 +10,7 @@ import lexer.TokenType;
 import runtime.BuiltinFunction;
 import runtime.Environment;
 import runtime.ExitSignal;
+import runtime.FluxArray;
 import runtime.FluxClass;
 import runtime.FluxFunction;
 import runtime.FluxInstance;
@@ -164,6 +165,9 @@ else if (stmt instanceof Stmt.Continue) {
 
         if (expr instanceof Expr.Literal) {
             Object value = ((Expr.Literal) expr).value;
+            if (value == null) {
+                return null;
+            }
             if (value instanceof String) {
                 return new FluxString((String) value);
             }
@@ -175,11 +179,11 @@ else if (stmt instanceof Stmt.Continue) {
         }
 
         if (expr instanceof Expr.Array) {
-            List<Double> values = new ArrayList<>();
+            List<Object> values = new ArrayList<>();
             for (Expr e : ((Expr.Array) expr).elements) {
-                values.add((Double) evaluate(e));
+                values.add(evaluate(e));
             }
-            return values;
+            return new FluxArray(values);
         }
 
         if (expr instanceof Expr.Map) {
@@ -217,7 +221,14 @@ else if (stmt instanceof Stmt.Continue) {
             Object arrayObj = evaluate(((Expr.Index) expr).array);
             Object indexObj = evaluate(((Expr.Index) expr).index);
 
-            if (arrayObj instanceof List) {
+            if (arrayObj instanceof FluxArray) {
+                int idx = ((Double) indexObj).intValue();
+                List<?> list = ((FluxArray) arrayObj).getValue();
+                if (idx < 0 || idx >= list.size()) {
+                    throw new RuntimeException("Runtime Error: Array index out of bounds.");
+                }
+                return list.get(idx);
+            } else if (arrayObj instanceof List) {
                 int idx = ((Double) indexObj).intValue();
                 List<?> list = (List<?>) arrayObj;
                 if (idx < 0 || idx >= list.size()) {
@@ -272,9 +283,11 @@ if (expr instanceof Expr.Get) {
         return value;
     } else if (object instanceof FluxString) {
         return ((FluxString) object).get(get.name);
+    } else if (object instanceof FluxArray) {
+        return ((FluxArray) object).get(get.name);
     }
 
-    throw runtimeError("Only instances and strings have properties.");
+    throw runtimeError("Only instances, strings, and arrays have properties.");
 }
 
 // ---------------- PROPERTY SET ----------------
@@ -448,6 +461,13 @@ if (expr instanceof Expr.Binary) {
         result = l / r;
         break;
 
+    case PERCENT:
+        checkNumberOperands(left, right);
+        l = left == null ? 0.0 : (double) left;
+        r = right == null ? 0.0 : (double) right;
+        result = l % r;
+        break;
+
     case GREATER:
         l = left == null ? 0.0 : (double) left;
         r = right == null ? 0.0 : (double) right;
@@ -473,11 +493,23 @@ if (expr instanceof Expr.Binary) {
         break;
 
     case EQUAL_EQUAL:
-        result = left.equals(right);
+        if (left == null && right == null) {
+            result = true;
+        } else if (left == null || right == null) {
+            result = false;
+        } else {
+            result = left.equals(right);
+        }
         break;
 
     case BANG_EQUAL:
-        result = !left.equals(right);
+        if (left == null && right == null) {
+            result = false;
+        } else if (left == null || right == null) {
+            result = true;
+        } else {
+            result = !left.equals(right);
+        }
         break;
 
     default:
@@ -573,16 +605,158 @@ throw new RuntimeException("Runtime Error: Unknown expression.");
             double start = (double) arguments.get(0);
             double end = (double) arguments.get(1);
 
-            List<Double> result = new ArrayList<>();
+            List<Object> result = new ArrayList<>();
             for (int i = (int) start; i < (int) end; i++) {
                 result.add((double) i);
             }
-            return result;
+            return new FluxArray(result);
         }
 
         @Override
         public int arity() {
             return 2;
+        }
+    }));
+
+    // floor(number)
+    environment.define("floor", new BuiltinFunction("floor", new NativeFunction() {
+        @Override
+        public Object call(List<Object> arguments) {
+            double value = (double) arguments.get(0);
+            return (double) Math.floor(value);
+        }
+
+        @Override
+        public int arity() {
+            return 1;
+        }
+    }));
+
+    // ceil(number)
+    environment.define("ceil", new BuiltinFunction("ceil", new NativeFunction() {
+        @Override
+        public Object call(List<Object> arguments) {
+            double value = (double) arguments.get(0);
+            return (double) Math.ceil(value);
+        }
+
+        @Override
+        public int arity() {
+            return 1;
+        }
+    }));
+
+    // round(number)
+    environment.define("round", new BuiltinFunction("round", new NativeFunction() {
+        @Override
+        public Object call(List<Object> arguments) {
+            double value = (double) arguments.get(0);
+            return (double) Math.round(value);
+        }
+
+        @Override
+        public int arity() {
+            return 1;
+        }
+    }));
+
+    // sqrt(number)
+    environment.define("sqrt", new BuiltinFunction("sqrt", new NativeFunction() {
+        @Override
+        public Object call(List<Object> arguments) {
+            double value = (double) arguments.get(0);
+            return Math.sqrt(value);
+        }
+
+        @Override
+        public int arity() {
+            return 1;
+        }
+    }));
+
+    // abs(number)
+    environment.define("abs", new BuiltinFunction("abs", new NativeFunction() {
+        @Override
+        public Object call(List<Object> arguments) {
+            double value = (double) arguments.get(0);
+            return Math.abs(value);
+        }
+
+        @Override
+        public int arity() {
+            return 1;
+        }
+    }));
+
+    // min(a, b)
+    environment.define("min", new BuiltinFunction("min", new NativeFunction() {
+        @Override
+        public Object call(List<Object> arguments) {
+            double a = (double) arguments.get(0);
+            double b = (double) arguments.get(1);
+            return Math.min(a, b);
+        }
+
+        @Override
+        public int arity() {
+            return 2;
+        }
+    }));
+
+    // max(a, b)
+    environment.define("max", new BuiltinFunction("max", new NativeFunction() {
+        @Override
+        public Object call(List<Object> arguments) {
+            double a = (double) arguments.get(0);
+            double b = (double) arguments.get(1);
+            return Math.max(a, b);
+        }
+
+        @Override
+        public int arity() {
+            return 2;
+        }
+    }));
+
+    // toNumber(value)
+    environment.define("toNumber", new BuiltinFunction("toNumber", new NativeFunction() {
+        @Override
+        public Object call(List<Object> arguments) {
+            Object value = arguments.get(0);
+            if (value instanceof Double) return value;
+            if (value instanceof Boolean) return ((Boolean) value) ? 1.0 : 0.0;
+            if (value instanceof FluxString) {
+                try {
+                    return Double.parseDouble(((FluxString) value).getValue());
+                } catch (NumberFormatException e) {
+                    throw new RuntimeException("[Flux Runtime Error]\nCannot convert string to number.");
+                }
+            }
+            throw new RuntimeException("[Flux Runtime Error]\nCannot convert value to number.");
+        }
+
+        @Override
+        public int arity() {
+            return 1;
+        }
+    }));
+
+    // toString(value)
+    environment.define("toString", new BuiltinFunction("toString", new NativeFunction() {
+        @Override
+        public Object call(List<Object> arguments) {
+            Object value = arguments.get(0);
+            if (value == null) return new FluxString("null");
+            if (value instanceof FluxString) return value;
+            if (value instanceof FluxArray) return new FluxString(value.toString());
+            if (value instanceof Boolean) return new FluxString(value.toString());
+            if (value instanceof Double) return new FluxString(String.format("%g", value));
+            return new FluxString(value.toString());
+        }
+
+        @Override
+        public int arity() {
+            return 1;
         }
     }));
 }

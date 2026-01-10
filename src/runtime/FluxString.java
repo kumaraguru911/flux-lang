@@ -1,5 +1,6 @@
 package runtime;
 
+import java.util.ArrayList;
 import java.util.List;
 import lexer.Token;
 
@@ -36,6 +37,87 @@ public class FluxString {
                         return 2;
                     }
                 });
+
+            case "upper":
+                return new BuiltinFunction("upper", new NativeFunction() {
+                    @Override
+                    public Object call(List<Object> arguments) {
+                        return new FluxString(value.toUpperCase());
+                    }
+                    @Override
+                    public int arity() {
+                        return 0;
+                    }
+                });
+
+            case "lower":
+                return new BuiltinFunction("lower", new NativeFunction() {
+                    @Override
+                    public Object call(List<Object> arguments) {
+                        return new FluxString(value.toLowerCase());
+                    }
+                    @Override
+                    public int arity() {
+                        return 0;
+                    }
+                });
+
+            case "split":
+                return new BuiltinFunction("split", new NativeFunction() {
+                    @Override
+                    public Object call(List<Object> arguments) {
+                        String delimiter = ((FluxString) arguments.get(0)).getValue();
+                        String[] parts = value.split(java.util.regex.Pattern.quote(delimiter));
+                        List<Object> result = new ArrayList<>();
+                        for (String part : parts) {
+                            result.add(new FluxString(part));
+                        }
+                        return new FluxArray(result);
+                    }
+                    @Override
+                    public int arity() {
+                        return 1;
+                    }
+                });
+
+            case "trim":
+                return new BuiltinFunction("trim", new NativeFunction() {
+                    @Override
+                    public Object call(List<Object> arguments) {
+                        return new FluxString(value.trim());
+                    }
+                    @Override
+                    public int arity() {
+                        return 0;
+                    }
+                });
+
+            case "startsWith":
+                return new BuiltinFunction("startsWith", new NativeFunction() {
+                    @Override
+                    public Object call(List<Object> arguments) {
+                        String prefix = ((FluxString) arguments.get(0)).getValue();
+                        return value.startsWith(prefix);
+                    }
+                    @Override
+                    public int arity() {
+                        return 1;
+                    }
+                });
+
+            case "endsWith":
+                return new BuiltinFunction("endsWith", new NativeFunction() {
+                    @Override
+                    public Object call(List<Object> arguments) {
+                        String suffix = ((FluxString) arguments.get(0)).getValue();
+                        return value.endsWith(suffix);
+                    }
+                    @Override
+                    public int arity() {
+                        return 1;
+                    }
+                });
+
             default:
                 throw new RuntimeException("[Flux Runtime Error]\nUndefined method '" + name.lexeme + "' on string.");
         }

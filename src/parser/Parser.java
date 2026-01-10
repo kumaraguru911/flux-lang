@@ -341,7 +341,7 @@ private Expr finishCall(Expr callee) {
     private Expr factor() {
     Expr expr = call();
 
-    while (match(TokenType.STAR, TokenType.SLASH)) {
+    while (match(TokenType.STAR, TokenType.SLASH, TokenType.PERCENT)) {
         Token operator = previous();
         Expr right = call();
         expr = new Expr.Binary(expr, operator, right);
@@ -423,11 +423,18 @@ private Expr and() {
 }
 
 
-    // 2️⃣ Unary NOT
+    // 2️⃣ Unary NOT or MINUS
     if (match(TokenType.NOT)) {
         Token operator = previous();
         Expr right = primary();
         return new Expr.Logical(null, operator, right);
+    }
+
+    if (match(TokenType.MINUS)) {
+        Token operator = previous();
+        Expr right = primary();
+        // Unary minus is represented as 0 - expr
+        return new Expr.Binary(new Expr.Literal(0.0), operator, right);
     }
 
     // 3️⃣ Literals
@@ -446,6 +453,11 @@ private Expr and() {
     if (match(TokenType.FALSE)) {
         return new Expr.Literal(false);
     }
+
+    if (match(TokenType.NULL)) {
+        return new Expr.Literal(null);
+    }
+
     // 4️⃣ Arrays
     if (match(TokenType.LEFT_BRACKET)) {
         return arrayLiteral();
